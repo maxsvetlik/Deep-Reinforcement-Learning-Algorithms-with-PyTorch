@@ -88,3 +88,16 @@ class SAC_Discrete(SAC):
         policy_loss = (action_probabilities * inside_term).sum(dim=1).mean()
         log_action_probabilities = torch.sum(log_action_probabilities * action_probabilities, dim=1)
         return policy_loss, log_action_probabilities
+
+    def load_policy(self):
+        self.critic_local.load_state_dict(torch.load("Models/{}_local_network.pt".format(self.agent_name), map_location=lambda storage, loc: storage))
+        self.critic_target.load_state_dict(torch.load("Models/{}_target_network.pt".format(self.agent_name), map_location=lambda storage, loc: storage))
+        self.critic_local_2.load_state_dict(torch.load("Models/{}_local_2_network.pt".format(self.agent_name), map_location=lambda storage, loc: storage))
+        self.critic_target_2.load_state_dict(torch.load("Models/{}_target_2_network.pt".format(self.agent_name), map_location=lambda storage, loc: storage))
+
+    def locally_save_policy(self):
+        """Saves the policy"""
+        torch.save(self.critic_local.state_dict(), "Models/{}_local_network.pt".format(self.agent_name))
+        torch.save(self.critic_target.state_dict(), "Models/{}_target_network.pt".format(self.agent_name))
+        torch.save(self.critic_local_2.state_dict(), "Models/{}_local_2_network.pt".format(self.agent_name))
+        torch.save(self.critic_target_2.state_dict(), "Models/{}_target_2_network.pt".format(self.agent_name))

@@ -90,6 +90,7 @@ class Base_Agent(object):
         else:
             return random_state.size
 
+    # TODO: What should the {reward_threshold, trials} parameters be?
     def get_score_required_to_win(self):
         """Gets average score required to win game"""
         print("TITLE ", self.environment_title)

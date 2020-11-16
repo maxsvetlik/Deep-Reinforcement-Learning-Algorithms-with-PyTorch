@@ -85,6 +85,46 @@ class Trainer(object):
         plt.show()
         return self.results
 
+    def evaluate_agent(self, agent_class, num_eval_episodes=4):
+        """Run an episode of games for an agent, loading a model"""
+        """Runs a set of games for a given agent, saving the results in self.results"""
+        agent_results = []
+        agent_name = agent_class.agent_name
+        agent_group = self.agent_to_agent_group[agent_name]
+        agent_round = 1
+
+        # manually edit relevant config parameters for evaluation
+        self.config.runs_per_agent = 1
+        self.config.num_episodes_to_run = num_eval_episodes
+
+        for run in range(self.config.runs_per_agent):
+            agent_config = copy.deepcopy(self.config)
+
+            if self.environment_has_changeable_goals(agent_config.environment) and self.agent_cant_handle_changeable_goals_without_flattening(agent_name):
+                print("Flattening changeable-goal environment for agent {}".format(agent_name))
+                agent_config.environment = gym.wrappers.FlattenDictWrapper(agent_config.environment,
+                                                                           dict_keys=["observation", "desired_goal"])
+
+            if self.config.randomise_random_seed: agent_config.seed = random.randint(0, 2**32 - 2)
+            agent_config.hyperparameters = agent_config.hyperparameters[agent_group]
+            print("AGENT NAME: {}".format(agent_name))
+            agent = agent_class(agent_config)
+            agent.load_policy()
+            self.environment_name = agent.environment_title
+            print("RANDOM SEED " , agent_config.seed)
+            # TODO way to get obs and reward for each step here? If not, unroll
+            # agent.run_n_episodes to step through and hold data
+            game_scores, rolling_scores, time_taken = agent.run_n_episodes()
+            print("Time taken: {}".format(time_taken), flush=True)
+            self.print_two_empty_lines()
+            agent_results.append([game_scores, rolling_scores, len(rolling_scores), -1 * max(rolling_scores), time_taken])
+            if self.config.visualise_individual_results:
+                self.visualise_overall_agent_results([rolling_scores], agent_name, show_each_run=True)
+                plt.show()
+            agent_round += 1
+        #self.results[agent_name] = agent_results
+
+       
     def create_object_to_store_results(self):
         """Creates a dictionary that we will store the results in if it doesn't exist, otherwise it loads it up"""
         if self.config.overwrite_existing_results_file or not self.config.file_to_save_data_results or not os.path.isfile(self.config.file_to_save_data_results):
@@ -114,6 +154,8 @@ class Trainer(object):
             self.environment_name = agent.environment_title
             print(agent.hyperparameters)
             print("RANDOM SEED " , agent_config.seed)
+            # TODO way to get obs and reward for each step here? If not, unroll
+            # agent.run_n_episodes to step through and hold data
             game_scores, rolling_scores, time_taken = agent.run_n_episodes()
             print("Time taken: {}".format(time_taken), flush=True)
             self.print_two_empty_lines()
